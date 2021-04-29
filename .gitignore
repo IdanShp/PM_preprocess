@@ -2,8 +2,8 @@
 resources/*
 !resources/resources.zip
 
-#created dataset
-data_set/
+#data set have its own gitignore file
+
 
 #pycharm files
 .idea
