@@ -35,6 +35,13 @@ zones = [['A1', 'A2', 'A3'], ['B1', 'B2', 'B3'], ['C1', 'C2', 'C3'], ['D1', 'D2'
 position_col= "positions"
 zone_col="zone"
 
+#team name
+teamid_col = "teamId"
+team_name_col = "team_name"
+name_file_path = players_file
+namefile_id_col = "wyId"
+namefile_name_col = "officialName"
+
 
 #start\end nodes
 with_start_end = False

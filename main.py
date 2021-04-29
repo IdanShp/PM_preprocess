@@ -32,8 +32,11 @@ df = pd.read_json(conf.events_file)
     # filter wanted matches
 df = df.loc[df[conf.match_col].isin(conf.matches_include)]
     # assign team names
+df = step.add_team_name(df, conf.teamid_col, conf.team_name_col, conf.teams_file , conf.namefile_id_col, conf.namefile_name_col)
+#   add_name_by_id.main("step3.csv", "teamId", "team_name", "./raw_data/events_Spain.json", "wyId", "officialName", "stage4.1.csv")
 
     # assign player names
+
     # convert position to zone
 df = step.add_zone_col(df,conf.position_col,conf.zone_col, conf.zones ,conf.split_x_to, conf.split_y_to)
     # convert time
