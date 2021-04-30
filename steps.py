@@ -59,16 +59,6 @@ def add_zone_col(df,pos_col_name,new_pos_col_name,zones,split_x_to,split_y_to):
 
 ##### Team Name #####
 
-def id_to_name(name_df, id, id_col, name_col):
-    name_data = name_df[name_df.wyId == id]
-    s = name_data[name_col]
-    if s.size == 0:
-        raise  "nameNotFound"
-    name = name_data[name_col].values[0]
-    name = name.encode().decode("unicode_escape")  # for latin chars
-    return name
-
-
 def add_team_name(df, id_col, new_col, name_file_path, nf_id_column, nf_name_col):
     #   add_name_by_id.main("step3.csv", "teamId", "team_name", "./raw_data/events_Spain.json", "wyId", "officialName", "stage4.1.csv")
 
@@ -91,13 +81,16 @@ def add_team_name(df, id_col, new_col, name_file_path, nf_id_column, nf_name_col
         print(new_col + "already exists in columns.")
         print("dont one of those:\n" + listOfColumnNames)
         return()
+
+    #make dic from df
+    names_id = names_df.set_index(nf_id_column).to_dict('index')
         
-    
     df_size=df.size
     for i, row in df.iterrows():
         id=row[id_col]
-        name = id_to_name(names_df, id, nf_id_column, nf_name_col)
-        #print("Name returnes! "+name )
+        name = names_id[id][nf_name_col]
+        if len(name)==0:
+            name="ID" + str(id)
         if i%10000 == 0:
             print(str(i)+" out of "+str(df_size))
 
