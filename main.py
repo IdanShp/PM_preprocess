@@ -30,49 +30,39 @@ if not already_unzipped:
         zip_ref.extractall(conf.resources_dir)
 
 # 2.prepare data - load with pandas.
-df = pd.read_json(conf.events_file)
-# filter wanted matches
-df = df.loc[df[conf.match_col].isin(conf.matches_include)]
-# assign team names
-df = step.add_team_name(df, conf.teamid_col, conf.team_name_col, conf.teams_file, conf.namefile_id_col,
-                        conf.namefile_name_col)
+df = pd.read_json(conf.events_file).set_index('id')
 
-# assign player names
-
-# convert position to zone
-df = step.add_zone_col(df, conf.position_col, conf.zone_col, conf.zones, conf.split_x_to, conf.split_y_to)
-# convert time
-# drop unused columns
-# assign case id (use deticated function)
-# filter only wanted cases
-# create xes file?
-
-print(df)
-
-''' 
-in step 2, at any point, we can save the result to a file
-and then begin from there instead
-of creating again from zero
-'''
-# 3.analyze data with pm4py
-
-print(time.process_time() - start_time)
-
-# steps:
 # filter season with wanted matches (by match id in config file)
-# open filtered json as dataframe
+df = df.loc[df[conf.match_col].isin(conf.matches_include)]
+
+# read team id, add team name column
+tn=pd.read_json(conf.teams_file)
+df=df.join(tn[['name','wyId']].rename(columns={'wyId':'teamId','name':'team_name'}, inplace=False).set_index('teamId') , on='teamId')
+
+# read player id, add player name column
+pn=pd.read_json(conf.players_file)
+df= df.join(pn[['shortName','wyId']].rename(columns={'wyId':'playerId','shortName':'Player_name'}, inplace=False).set_index('playerId') , on='playerId')
+
+# read position (coordinates) and convert to frame
+df = step.add_zone_col(df, conf.position_col, conf.zone_col, conf.zones, conf.split_x_to, conf.split_y_to)
 
 # convert tags from dict to list
-# read player id, add player name column
-# read team id, add team name column
-# match id - do nothing
-# read position (coordinates) and convert to frame
-# consider - event second, match half and last game finish time. calculate event absolute time and relative time
+df['tags']=df['tags'].apply(lambda x: [d['id'] for d in x] )
+
+# consider - event second, madftch half and last game finish time. calculate event absolute time and relative time
+
 # save file
 
 # open file
 # set case ID by - team name, tags, event name.
+df=step.get_2d_cases(df)
 # save file
+
+# assign case id (use deticated function)
+# filter only wanted cases
+# create xes file?
+
+# drop unused columns for speed?
 
 # open file
 # filter High value cases
@@ -82,3 +72,15 @@ print(time.process_time() - start_time)
 # open file
 # add trace start and end states (optional)
 # save file
+print(df)
+
+''' 
+in step 2, at any point, we can save the result to a file
+and then begin from there instead
+of creating again from zero
+'''
+# 3.analyze data with pm4py
+
+# steps:
+# open filtered json as dataframe?
+print(time.process_time() - start_time)

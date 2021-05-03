@@ -96,6 +96,36 @@ def add_team_name(df, id_col, new_col, name_file_path, nf_id_column, nf_name_col
 
     return (df)
 
+
+def get_2d_cases(events_df):
+    case_id = 1
+    current_case_used = True
+    high_value_cases = []
+
+    for i, row in events_df.iterrows():
+        team_name=row["team_name"]
+        tags = row["tags"]
+        if team_name == 'Barcelona' and ((1801 in tags or 703 in tags) or 'Shot' in row['eventName']):
+                events_df.at[i, 'caseId'] = str(case_id)
+                #print("CaseID given "+ str(case_id))
+                current_case_used = True
+                # if frame not in ['D1', 'D2', 'D3'] and str(case_id) not in low_value_cases:
+                if ('Shot' in row['eventName'] or row["zone"] == 'D2') and str(case_id) not in high_value_cases:
+                    high_value_cases.append(str(case_id))
+                    #print(high_value_cases)
+                # print(str(case_id))
+        elif team_name != 'FC Barcelona' and row['eventName'] == 'Dual' and 701 in tags:
+            events_df.at[i, 'caseId'] = 0
+        else:
+            if current_case_used:
+                case_id += 1
+                current_case_used = False
+            events_df.at[i, 'caseId'] = 0
+        
+    print(high_value_cases)
+    new_items_df = events_df.loc[events_df['caseId'].isin(high_value_cases)].copy()
+    return(new_items_df)
+
 # steps:
 # filter season with wanted matches (by match id in config file)
 # open filtered json as dataframe
