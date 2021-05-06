@@ -56,75 +56,46 @@ def add_zone_col(df, pos_col_name, new_pos_col_name, zones, split_x_to, split_y_
     return (df)
 
 
-##### Team Name #####
-
-def add_team_name(df, id_col, new_col, name_file_path, nf_id_column, nf_name_col):
-    # add_name_by_id.main("step3.csv", "teamId", "team_name", "./raw_data/events_Spain.json", "wyId", "officialName", "stage4.1.csv")
-
-    if not os.path.exists(name_file_path):
-        print("file " + name_file_path + " dont exist")
-        return ()
-
-    names_df = pd.read_json(name_file_path)
-
-    # check col_name label exists
-    columnsNamesArr = df.columns.values
-    listOfColumnNames = list(columnsNamesArr)
-    if not id_col in listOfColumnNames:
-        print(id_col + "not found in columns.")
-        print("use one of those:\n" + listOfColumnNames)
-        return ()
-
-    if new_col in listOfColumnNames:
-        print(new_col + "already exists in columns.")
-        print("dont one of those:\n" + listOfColumnNames)
-        return ()
-
-    # make dic from df
-    names_id = names_df.set_index(nf_id_column).to_dict('index')
-
-    df_size = df.size
-    for i, row in df.iterrows():
-        id = row[id_col]
-        name = names_id[id][nf_name_col]
-        if len(name) == 0:
-            name = "ID" + str(id)
-        if i % 10000 == 0:
-            print(str(i) + " out of " + str(df_size))
-
-        df.at[i, new_col] = name
-
-    return (df)
-
-
-def get_2d_cases(events_df):
+def get_2d_cases(events_df,caseid_col,team_name_col,team_id_col,tags_col,event_col,zone_col):
     case_id = 1
     current_case_used = True
     high_value_cases = []
 
     for i, row in events_df.iterrows():
-        team_name=row["team_name"]
-        tags = row["tags"]
+        team_name=row[team_name_col]
+        tags = row[tags_col]
         if team_name == 'Barcelona' and ((1801 in tags or 703 in tags) or 'Shot' in row['eventName']):
-            events_df.at[i, 'caseId'] = str(case_id)
+            events_df.at[i, caseid_col] = str(case_id)
             #print("CaseID given "+ str(case_id))
             current_case_used = True
             # if frame not in ['D1', 'D2', 'D3'] and str(case_id) not in low_value_cases:
-            if ('Shot' in row['eventName'] or row["zone"] == 'D2') and str(case_id) not in high_value_cases:
+            if ('Shot' in row[event_col] or row[zone_col] == 'D2') and str(case_id) not in high_value_cases:
                 high_value_cases.append(str(case_id))
                 #print(high_value_cases)
             # print(str(case_id))
-        elif team_name != 'FC Barcelona' and row['eventName'] == 'Dual' and 701 in tags:
-            events_df.at[i, 'caseId'] = 0
+        elif team_name != 'Barcelona' and row[event_col] == 'Dual' and 701 in tags:
+            events_df.at[i, caseid_col] = 0
         else:
             if current_case_used:
                 case_id += 1
                 current_case_used = False
-            events_df.at[i, 'caseId'] = 0
+            events_df.at[i, caseid_col] = 0
         
-    print(high_value_cases)
-    new_items_df = events_df.loc[events_df['caseId'].isin(high_value_cases)].copy()
+    # print(high_value_cases)
+    new_items_df = events_df.loc[events_df[caseid_col].isin(high_value_cases)].copy()
     return(new_items_df)
+
+
+def half_to_90min(df,halfs_col="matchPeriod" ,seconds_col="eventSec" ):
+    for i, row in df.iterrows():
+        event_sec = row[seconds_col]
+        event_half = row[halfs_col]
+        if event_half == '2H':
+            event_sec += 2700
+        df.at[i,seconds_col] = event_sec
+
+    return df
+
 
 
 def remove_loops(df, col_name, case_id_col):

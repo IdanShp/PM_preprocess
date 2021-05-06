@@ -25,8 +25,10 @@ matches_exclude = []
 # columns rename 
 col_dic = {
     "tags" : "info"
-    
 }
+
+# prepare data
+id_col = "id"
 
 #zone mapping 
 split_x_to = [33, 34, 33]
@@ -35,12 +37,35 @@ zones = [['A1', 'A2', 'A3'], ['B1', 'B2', 'B3'], ['C1', 'C2', 'C3'], ['D1', 'D2'
 position_col= "positions"
 zone_col="zone"
 
-#team name
-teamid_col = "teamId"
-team_name_col = "team_name"
-name_file_path = players_file
-namefile_id_col = "wyId"
-namefile_name_col = "officialName"
+#team file column names:
+teamfile_id='wyId'
+teamfile_name='name'
+
+eventsfile_teamid = 'teamId'
+eventsfile_team_name = 'team_name'
+
+#players file columns name
+
+playerfile_id='wyId'
+playerfile_name='shortName'
+
+eventsfile_pid = 'playerId'
+eventsfile_pname = 'player_name'
+drop_unknown_player=0
+unknown_pname = "unknown"
+
+# tags:
+tags_col = "tags"
+
+# adjust time
+match_peroid_col = "matchPeriod"
+event_sec = "eventSec"
+
+# case id 
+case_id_col = "caseId"
+
+# get 2d cases:
+events_col = "eventName"
 
 
 #start\end nodes
@@ -48,3 +73,7 @@ with_start_end = False
 
 #remove_loops
 remove_loops = 1
+
+#before caseid file path
+prepare_file = "./data_set/prepare_file.csv"
+
