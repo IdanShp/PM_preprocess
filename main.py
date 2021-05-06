@@ -50,12 +50,13 @@ df = step.add_zone_col(df, conf.position_col, conf.zone_col, conf.zones, conf.sp
 df['tags']=df['tags'].apply(lambda x: [d['id'] for d in x] )
 
 # consider - event second, madftch half and last game finish time. calculate event absolute time and relative time
-
+df=step.get_2d_cases(df)
 # save file
+if conf.remove_loops:
+    df=step.remove_loops(df, "Player_name","caseId")
 
 # open file
 # set case ID by - team name, tags, event name.
-df=step.get_2d_cases(df)
 # save file
 
 # assign case id (use deticated function)
@@ -72,7 +73,10 @@ df=step.get_2d_cases(df)
 # open file
 # add trace start and end states (optional)
 # save file
-print(df)
+print(df[["caseId","Player_name","zone"]])
+
+df.to_csv("./data_set/all_games_no_loops.csv", index=False ,float_format="%.6f")
+
 
 ''' 
 in step 2, at any point, we can save the result to a file

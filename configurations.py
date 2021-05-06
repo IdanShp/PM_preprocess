@@ -45,3 +45,6 @@ namefile_name_col = "officialName"
 
 #start\end nodes
 with_start_end = False
+
+#remove_loops
+remove_loops = 1

@@ -106,14 +106,14 @@ def get_2d_cases(events_df):
         team_name=row["team_name"]
         tags = row["tags"]
         if team_name == 'Barcelona' and ((1801 in tags or 703 in tags) or 'Shot' in row['eventName']):
-                events_df.at[i, 'caseId'] = str(case_id)
-                #print("CaseID given "+ str(case_id))
-                current_case_used = True
-                # if frame not in ['D1', 'D2', 'D3'] and str(case_id) not in low_value_cases:
-                if ('Shot' in row['eventName'] or row["zone"] == 'D2') and str(case_id) not in high_value_cases:
-                    high_value_cases.append(str(case_id))
-                    #print(high_value_cases)
-                # print(str(case_id))
+            events_df.at[i, 'caseId'] = str(case_id)
+            #print("CaseID given "+ str(case_id))
+            current_case_used = True
+            # if frame not in ['D1', 'D2', 'D3'] and str(case_id) not in low_value_cases:
+            if ('Shot' in row['eventName'] or row["zone"] == 'D2') and str(case_id) not in high_value_cases:
+                high_value_cases.append(str(case_id))
+                #print(high_value_cases)
+            # print(str(case_id))
         elif team_name != 'FC Barcelona' and row['eventName'] == 'Dual' and 701 in tags:
             events_df.at[i, 'caseId'] = 0
         else:
@@ -125,6 +125,50 @@ def get_2d_cases(events_df):
     print(high_value_cases)
     new_items_df = events_df.loc[events_df['caseId'].isin(high_value_cases)].copy()
     return(new_items_df)
+
+
+def remove_loops(df, col_name, case_id_col):
+    columnsNamesArr = df.columns.values
+    listOfColumnNames = list(columnsNamesArr)
+    if not col_name in listOfColumnNames:
+        print(col_name + "not found in columns.")
+        print("use one of those:\n" + str(listOfColumnNames))
+        return
+    
+
+    try:
+        i=0
+        prev_case_id=""
+        events_ids=list(iter(df.index))
+        while i:
+            #if new  case:
+            if prev_case_id != df.at[events_ids[i],"caseId"]:
+                prev_case_id=df.at[events_ids[i],"caseId"]
+                start_event_idx=i
+                
+                #TODO: start_time?
+                end_time=df.at[events_ids[i],"relEventTime"]
+                
+            else:
+                # look for new col_name value or new caseID
+                while ((i < df.size) & (prev_case_id==df.at[events_ids[i],"caseId"]) & 
+                       (df.at[events_ids[i],col_name]==df.at[start_event_idx,col_name])):
+                    end_time=df.at[events_ids[i],"relEventTime"]
+                    next(i)
+                df.at[start_event_idx,"end_time"] = end_time
+                #TODO: copy the row to a new df (or filter at the end of it.)
+                
+                start_event_idx=i
+                end_time=df.at[events_ids[i],"relEventTime"]
+                
+            next(i)
+    except:
+        print("Unexpected error:", sys.exc_info()[0])
+        print("while i=" + str(i) + "size of df is "+str(df.size))
+        raise
+    
+    df = df.dropna()
+    return df
 
 # steps:
 # filter season with wanted matches (by match id in config file)
