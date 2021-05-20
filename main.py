@@ -5,8 +5,8 @@ import pm4py
 
 
 # CREATE_NEW_DATASET = True
-
 # ASSIGN_CASE_ID = True
+# CREATE_XES = True
 
 # time for monitoring
 import time
@@ -97,10 +97,11 @@ if 'CREATE_NEW_DATASET' in locals() or not os.path.exists(conf.prepare_file):
 
 
 elif 'ASSIGN_CASE_ID' in locals() or not os.path.exists(conf.caseid_file):
-    
+    # open file
     print("reloading last data_set")
     df=pd.read_json(conf.prepare_file,encoding="unicode_escape", orient='index', convert_dates=False, convert_axes=False)
     # consider - event second, madftch half and last game finish time. calculate event absolute time and relative time
+    # set case ID by - team name, tags, event name.
     print("assigning case id for good moves")
     df=step.get_2d_cases(df, conf.case_id_col , conf.eventsfile_team_name,
                         conf.eventsfile_teamid, conf.tags_col, conf.events_col,
@@ -115,57 +116,33 @@ elif 'ASSIGN_CASE_ID' in locals() or not os.path.exists(conf.caseid_file):
         print("caseid_file file ready")
     except:
         print("cant write caseid_file ")
-else:
+
+elif 'CREATE_XES' in locals() or not os.path.exists(conf.xes_file):
     print("reloading last case_id")
     df=pd.read_json(conf.caseid_file,encoding="unicode_escape", orient='index', convert_dates=False, convert_axes=False)
 
-# open file
-# set case ID by - team name, tags, event name.
-# save file
+     
+    print("writing file to csv (good for observing the data with excel")
+    df.to_csv("./data_set/all_games_no_loops.csv",float_format="%.6f")
+    #remove lists columns (make problems with converting to xes)
+    df=df.drop(columns=[conf.tags_col, conf.position_col])
+  
+    # drop unused columns for speed?
+        
+    #pm4py - create xes file
+    print('building event log')
+    event_log = pm4py.format_dataframe(df, case_id=conf.case_id_col, activity_key=conf.eventsfile_pname, timestamp_key=conf.date_col, timest_format='yyyy-mm-dd hh:mm:ss.SSSSSS')
+    pm4py.write_xes(event_log, conf.xes_file)
 
-# assign case id (use deticated function)
-# filter only wanted cases
-# create xes file?
-
-# drop unused columns for speed?
-
-# open file
-# filter High value cases
+# read log    
+log = pm4py.read_xes(conf.xes_file)
+    
 # filter short moves (optional)
-# save file
-
-# open file
 # add trace start and end states (optional)
-# save file
 
+### start with PM algorithms ###
+# heuristic:
+map = pm4py.discover_heuristics_net(log)
+pm4py.view_heuristics_net(map)
 
-print("writing file to csv")
-df.to_csv("./data_set/all_games_no_loops.csv",float_format="%.6f")
-
-#remove lists columns
-df=df.drop(columns=[conf.tags_col, conf.position_col])
-
-#pm4py
-print('building event log')
-event_log = pm4py.format_dataframe(df, case_id=conf.case_id_col, activity_key=conf.eventsfile_pname, timestamp_key=conf.date_col, timest_format='yyyy-mm-dd hh:mm:ss.SSSSSS')
-pm4py.write_xes(event_log, "./xes/no_loops.xes")
-log = pm4py.read_xes("./xes/no_loops.xes")
-
-
-
-
-
-
-print(df[[conf.case_id_col,conf.eventsfile_pname,conf.zone_col]])
-
-
-''' 
-in step 2, at any point, we can save the result to a file
-and then begin from there instead
-of creating again from zero
-'''
-# 3.analyze data with pm4py
-
-# steps:
-# open filtered json as dataframe?
 print("done. working time: ",time.process_time() - start_time)

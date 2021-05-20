@@ -81,6 +81,8 @@ remove_loops = 1
 prepare_file = "./data_set/prepare_file.json"
 #after caseid file path
 caseid_file = "./data_set/caseid_file.json"
+#after xes
+xes_file = "./xes/events_pm4py.xes"
 
 # add date
 begin_date= datetime.fromisoformat('2018-05-20 00:00:00.000')
