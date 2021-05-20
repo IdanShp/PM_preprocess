@@ -2,6 +2,9 @@
 
 
 #
+from datetime import datetime
+from datetime import timedelta
+
 resources_dir = "./resources/"
 resources_arch = resources_dir+"resources.zip"
 
@@ -75,5 +78,14 @@ with_start_end = False
 remove_loops = 1
 
 #before caseid file path
-prepare_file = "./data_set/prepare_file.csv"
+prepare_file = "./data_set/prepare_file.json"
+#after caseid file path
+caseid_file = "./data_set/caseid_file.json"
+
+# add date
+begin_date= datetime.fromisoformat('2018-05-20 00:00:00.000')
+time_between = timedelta(days=0, hours= 2, seconds=0, microseconds=0)
+time_col='eventSec'
+match_col = 'matchId'
+date_col = 'date_time'
 

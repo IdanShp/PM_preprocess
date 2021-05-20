@@ -1,9 +1,12 @@
 import os
 import sys
 import pandas as pd
+import pm4py
 
 
-CREATE_NEW_DATASET = True
+# CREATE_NEW_DATASET = True
+
+# ASSIGN_CASE_ID = True
 
 # time for monitoring
 import time
@@ -81,24 +84,40 @@ if 'CREATE_NEW_DATASET' in locals() or not os.path.exists(conf.prepare_file):
     df=step.half_to_90min(df,halfs_col=conf.match_peroid_col, 
                           seconds_col=conf.event_sec)
 
+    # add dates 
+    print("adding date column")
+    df= step.add_date(df,conf.time_col,conf.match_col, 
+                        conf.date_col,conf.begin_date,conf.time_between)
+
     try:
-        df.to_json(conf.prepare_file, orient='index',force_ascii=False)
+        df.to_json(conf.prepare_file, orient='index',force_ascii=False, index=True)
         print("prepare file ready")
     except:
         print("cant write prepare file")
-else: 
-    print("reloading last data_set")
-    df=pd.read_json(conf.prepare_file,encoding="unicode_escape", orient='index').set_index(conf.id_col)
 
-# consider - event second, madftch half and last game finish time. calculate event absolute time and relative time
-print("assigning case id for good moves")
-df=step.get_2d_cases(df, conf.case_id_col , conf.eventsfile_team_name,
-                     conf.eventsfile_teamid, conf.tags_col, conf.events_col,
-                     conf.zone_col)
-# save file
-if conf.remove_loops:
-    print("remove loops")
-    df=step.remove_loops(df, conf.eventsfile_pname ,conf.case_id_col)
+
+elif 'ASSIGN_CASE_ID' in locals() or not os.path.exists(conf.caseid_file):
+    
+    print("reloading last data_set")
+    df=pd.read_json(conf.prepare_file,encoding="unicode_escape", orient='index', convert_dates=False, convert_axes=False)
+    # consider - event second, madftch half and last game finish time. calculate event absolute time and relative time
+    print("assigning case id for good moves")
+    df=step.get_2d_cases(df, conf.case_id_col , conf.eventsfile_team_name,
+                        conf.eventsfile_teamid, conf.tags_col, conf.events_col,
+                        conf.zone_col)
+    # save file
+    if conf.remove_loops:
+        print("remove loops")
+        df=step.remove_loops(df, conf.eventsfile_pname ,conf.case_id_col)
+
+    try:
+        df.to_json(conf.caseid_file, orient='index',force_ascii=False, index=True)
+        print("caseid_file file ready")
+    except:
+        print("cant write caseid_file ")
+else:
+    print("reloading last case_id")
+    df=pd.read_json(conf.caseid_file,encoding="unicode_escape", orient='index', convert_dates=False, convert_axes=False)
 
 # open file
 # set case ID by - team name, tags, event name.
@@ -118,10 +137,26 @@ if conf.remove_loops:
 # open file
 # add trace start and end states (optional)
 # save file
-print(df[[conf.case_id_col,conf.eventsfile_pname,conf.zone_col]])
+
 
 print("writing file to csv")
 df.to_csv("./data_set/all_games_no_loops.csv",float_format="%.6f")
+
+#remove lists columns
+df=df.drop(columns=[conf.tags_col, conf.position_col])
+
+#pm4py
+print('building event log')
+event_log = pm4py.format_dataframe(df, case_id=conf.case_id_col, activity_key=conf.eventsfile_pname, timestamp_key=conf.date_col, timest_format='yyyy-mm-dd hh:mm:ss.SSSSSS')
+pm4py.write_xes(event_log, "./xes/no_loops.xes")
+log = pm4py.read_xes("./xes/no_loops.xes")
+
+
+
+
+
+
+print(df[[conf.case_id_col,conf.eventsfile_pname,conf.zone_col]])
 
 
 ''' 

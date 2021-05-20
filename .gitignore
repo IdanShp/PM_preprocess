@@ -9,6 +9,9 @@ resources/*
 .idea
 .idea/
 
+#visual studio files
+.vscode
+
 
 # Environments
 .env

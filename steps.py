@@ -3,6 +3,7 @@ here we will write the declerations of the functions.
 than we will source the code to main and use it there
 '''
 
+from datetime import timedelta
 import sys
 import os
 import pandas as pd
@@ -140,6 +141,25 @@ def remove_loops(df, col_name, case_id_col):
     
     df = df.dropna()
     return df
+
+
+# add dates
+def add_date(df,time_col,match_col,date_col,begin_date,time_between):
+    """
+    adding date columns to the game
+    df - the dataframe
+    begin date - date of the fisrst game
+    time_between - time between games
+    """
+    main_timer=begin_date
+    events_ids=list(iter(df.index))
+    current_match=df.at[events_ids[0],match_col]
+    for i, row in df.iterrows():
+        if current_match != df.at[i,match_col]:
+            main_timer+=time_between
+        df.at[i,date_col]=str(main_timer+timedelta(seconds=df.at[i,time_col]))
+    return(df)
+        
 
 # steps:
 # filter season with wanted matches (by match id in config file)
