@@ -96,7 +96,7 @@ if 'CREATE_NEW_DATASET' in locals() or not os.path.exists(conf.prepare_file):
         print("cant write prepare file")
 
 
-elif 'ASSIGN_CASE_ID' in locals() or not os.path.exists(conf.caseid_file):
+if 'ASSIGN_CASE_ID' in locals() or not os.path.exists(conf.caseid_file):
     # open file
     print("reloading last data_set")
     df=pd.read_json(conf.prepare_file,encoding="unicode_escape", orient='index', convert_dates=False, convert_axes=False)
@@ -117,7 +117,7 @@ elif 'ASSIGN_CASE_ID' in locals() or not os.path.exists(conf.caseid_file):
     except:
         print("cant write caseid_file ")
 
-elif 'CREATE_XES' in locals() or not os.path.exists(conf.xes_file):
+if 'CREATE_XES' in locals() or not os.path.exists(conf.xes_file):
     print("reloading last case_id")
     df=pd.read_json(conf.caseid_file,encoding="unicode_escape", orient='index', convert_dates=False, convert_axes=False)
 
@@ -142,7 +142,33 @@ log = pm4py.read_xes(conf.xes_file)
 
 ### start with PM algorithms ###
 # heuristic:
-map = pm4py.discover_heuristics_net(log)
+map = pm4py.discover_heuristics_net(log,dependency_threshold=0.5,and_threshold=0.9, loop_two_threshold=0.9)
 pm4py.view_heuristics_net(map)
+# inductive:
+
+from pm4py.objects.log.importer.xes import importer as xes_importer
+from pm4py.algo.discovery.inductive import algorithm as inductive_miner
+from pm4py.visualization.process_tree import visualizer as pt_visualizer
+from pm4py.visualization.heuristics_net import visualizer as hn_visualizer
+from pm4py.visualization.dfg import visualizer as dfg_visualizer
+
+from pm4py.visualization.petrinet import visualizer as pn_visualizer
+
+
+net, initial_marking, final_marking = inductive_miner.apply(log)
+tree = inductive_miner.apply_tree(log)
+# tree = inductive_miner.apply_dfg(net)
+# gviz_freq = dfg_visualizer.apply(frequency_dfg, variant=dfg_visualizer.Variants.FREQUENCY, activities_count=activities_freq, parameters={"format": "svg"})
+# dfg_visualizer.view(gviz_freq)
+
+
+gviz = pt_visualizer.apply(tree)
+pt_visualizer.view(gviz)
+
+
+
+# gviz = pn_visualizer.apply(net, initial_marking, final_marking)
+# pn_visualizer.view(gviz)
+
 
 print("done. working time: ",time.process_time() - start_time)
