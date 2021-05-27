@@ -99,11 +99,11 @@ def half_to_90min(df,halfs_col="matchPeriod" ,seconds_col="eventSec" ):
 
 
 
-def remove_loops(df, col_name, case_id_col):
+def remove_loops(df, player_col, case_id_col, seconds_col="eventSec"):
     columnsNamesArr = df.columns.values
     listOfColumnNames = list(columnsNamesArr)
-    if not col_name in listOfColumnNames:
-        print(col_name + "not found in columns.")
+    if not player_col in listOfColumnNames:
+        print(player_col + "not found in columns.")
         print("use one of those:\n" + str(listOfColumnNames))
         return
     
@@ -112,28 +112,34 @@ def remove_loops(df, col_name, case_id_col):
         i=0
         prev_case_id=""
         events_ids=list(iter(df.index))
-        while i:
+        
+        while i < len(events_ids):
             #if new  case:
+            # TODO: change the hardcoded caseID
             if prev_case_id != df.at[events_ids[i],"caseId"]:
                 prev_case_id=df.at[events_ids[i],"caseId"]
                 start_event_idx=i
                 
                 #TODO: start_time?
-                end_time=df.at[events_ids[i],"relEventTime"]
+                # TODO: change the hardcoded 
+                end_time=df.at[events_ids[i],seconds_col]
                 
             else:
-                # look for new col_name value or new caseID
+                # look for new player_col value or new caseID
+                # TODO: change the hardcoded caseID
                 while ((i < df.size) & (prev_case_id==df.at[events_ids[i],"caseId"]) & 
-                       (df.at[events_ids[i],col_name]==df.at[start_event_idx,col_name])):
-                    end_time=df.at[events_ids[i],"relEventTime"]
-                    next(i)
-                df.at[start_event_idx,"end_time"] = end_time
+                       (df.at[events_ids[i],player_col]==df.at[events_ids[start_event_idx],player_col])):
+                    # TODO: change the hardcoded caseID
+                    end_time=df.at[events_ids[i],seconds_col]
+                    i=i+1
+                # TODO: change the hardcoded caseID
+                df.at[events_ids[start_event_idx],"end_time"] = end_time
                 #TODO: copy the row to a new df (or filter at the end of it.)
                 
                 start_event_idx=i
-                end_time=df.at[events_ids[i],"relEventTime"]
+                end_time=df.at[events_ids[i],seconds_col]
                 
-            next(i)
+            i=i+1
     except:
         print("Unexpected error:", sys.exc_info()[0])
         print("while i=" + str(i) + "size of df is "+str(df.size))

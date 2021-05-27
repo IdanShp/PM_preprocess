@@ -41,6 +41,7 @@ if 'CREATE_NEW_DATASET' in locals() or not os.path.exists(conf.prepare_file):
     # 2.prepare data - load with pandas.
     print("reading dataframe")
     df = pd.read_json(conf.events_file).set_index(conf.id_col)
+    # df = pd.read_json(conf.events_file)
 
     # filter season with wanted matches (by match id in config file)
     print("filtering wanted games")
@@ -106,7 +107,7 @@ if 'ASSIGN_CASE_ID' in locals() or not os.path.exists(conf.caseid_file):
     df=step.get_2d_cases(df, conf.case_id_col , conf.eventsfile_team_name,
                         conf.eventsfile_teamid, conf.tags_col, conf.events_col,
                         conf.zone_col)
-    # save file
+    
     if conf.remove_loops:
         print("remove loops")
         df=step.remove_loops(df, conf.eventsfile_pname ,conf.case_id_col)
@@ -132,17 +133,24 @@ if 'CREATE_XES' in locals() or not os.path.exists(conf.xes_file):
     #pm4py - create xes file
     print('building event log')
     event_log = pm4py.format_dataframe(df, case_id=conf.case_id_col, activity_key=conf.eventsfile_pname, timestamp_key=conf.date_col, timest_format='yyyy-mm-dd hh:mm:ss.SSSSSS')
-    pm4py.write_xes(event_log, conf.xes_file)
+    
+    from pm4py.objects.log.exporter.xes import exporter as xes_exporter
+    xes_exporter.apply(event_log, conf.xes_file)
+    # pm4py.write_xes(event_log, conf.xes_file)
 
 # read log    
 log = pm4py.read_xes(conf.xes_file)
     
 # filter short moves (optional)
+print("filtering short cases (less than 4?)")
+from pm4py.algo.filtering.log.cases import case_filter
+log = case_filter.filter_on_case_size(log,min_case_size = 4)
+print("left with ",len(log)," cases")
 # add trace start and end states (optional)
 
 ### start with PM algorithms ###
 # heuristic:
-map = pm4py.discover_heuristics_net(log,dependency_threshold=0.5,and_threshold=0.9, loop_two_threshold=0.9)
+map = pm4py.discover_heuristics_net(log,dependency_threshold=0.9,and_threshold=0.65, loop_two_threshold=0.5)
 pm4py.view_heuristics_net(map)
 # inductive:
 
@@ -161,9 +169,18 @@ tree = inductive_miner.apply_tree(log)
 # gviz_freq = dfg_visualizer.apply(frequency_dfg, variant=dfg_visualizer.Variants.FREQUENCY, activities_count=activities_freq, parameters={"format": "svg"})
 # dfg_visualizer.view(gviz_freq)
 
+# gviz = pt_visualizer.apply(tree)
+# pt_visualizer.view(gviz)
 
-gviz = pt_visualizer.apply(tree)
-pt_visualizer.view(gviz)
+# net to transition system
+from pm4py.objects.petri_net.utils import reachability_graph
+
+ts = reachability_graph.construct_reachability_graph(net, initial_marking)
+
+from pm4py.visualization.transition_system import visualizer as ts_visualizer
+
+gviz = ts_visualizer.apply(ts, parameters={ts_visualizer.Variants.VIEW_BASED.value.Parameters.FORMAT: "svg"})
+ts_visualizer.view(gviz)
 
 
 
