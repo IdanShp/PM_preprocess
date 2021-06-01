@@ -57,7 +57,35 @@ def add_zone_col(df, pos_col_name, new_pos_col_name, zones, split_x_to, split_y_
     return (df)
 
 
-def get_2d_cases(events_df,caseid_col,team_name_col,team_id_col,tags_col,event_col,zone_col):
+
+def assign_case_id(events_df, caseid_col, team_id_col,match_id_col, trace_team_id,max_distance):
+    
+    case_id=0
+    dist=0
+    prev_game=""
+    #for each row
+    for i, row in events_df.iterrows():
+        if prev_game!=events_df.at[i, match_id_col]:
+            prev_game=events_df.at[i, match_id_col]
+            case_id+=1
+            dist=0
+        team_id=events_df.at[i, team_id_col]
+        if team_id == trace_team_id:
+            if dist > max_distance:
+                case_id+=1
+                dist=0
+            events_df.at[i, caseid_col] = case_id
+        
+        else:
+            dist+=1
+
+        
+    return events_df
+
+
+    
+
+def get_2d_cases(events_df, caseid_col, team_name_col, team_id_col, tags_col, event_col,zone_col):
     case_id = 1
     current_case_used = True
     high_value_cases = []

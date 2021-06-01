@@ -5,8 +5,8 @@ import pm4py
 
 
 # CREATE_NEW_DATASET = True
-# ASSIGN_CASE_ID = True
-# CREATE_XES = True
+ASSIGN_CASE_ID = True
+CREATE_XES = True
 
 # time for monitoring
 import time
@@ -59,6 +59,7 @@ if 'CREATE_NEW_DATASET' in locals() or not os.path.exists(conf.prepare_file):
     # read player id, add player_name column
     print("adding player_name columns")
     pn=pd.read_json(conf.players_file, encoding='unicode_escape')
+
     df= df.join(pn[[conf.playerfile_name, conf.playerfile_id]].rename(
             columns={conf.playerfile_id: conf.eventsfile_pid,
                     conf.playerfile_name: conf.eventsfile_pname},
@@ -102,6 +103,14 @@ if 'ASSIGN_CASE_ID' in locals() or not os.path.exists(conf.caseid_file):
     print("reloading last data_set")
     df=pd.read_json(conf.prepare_file,encoding="unicode_escape", orient='index', convert_dates=False, convert_axes=False)
     # consider - event second, madftch half and last game finish time. calculate event absolute time and relative time
+
+    
+    # assaign normal cases.
+    normal_case=step.assign_case_id(df,conf.case_id_col,conf.eventsfile_teamid,conf.match_col,trace_team_id=676,1)
+    normal_case = normal_case.dropna()
+    normal_case.to_csv("./data_set/normal.csv",float_format="%.6f")
+
+
     # set case ID by - team name, tags, event name.
     print("assigning case id for good moves")
     df=step.get_2d_cases(df, conf.case_id_col , conf.eventsfile_team_name,
