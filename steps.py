@@ -128,53 +128,27 @@ def half_to_90min(df,halfs_col="matchPeriod" ,seconds_col="eventSec" ):
 
 
 def remove_loops(df, player_col, case_id_col, seconds_col="eventSec"):
-    columnsNamesArr = df.columns.values
-    listOfColumnNames = list(columnsNamesArr)
-    if not player_col in listOfColumnNames:
-        print(player_col + "not found in columns.")
-        print("use one of those:\n" + str(listOfColumnNames))
-        return
     
+    #create new d ataframe with same columns
+    columns_list = list(df.columns.values)
+    new_df=pd.DataFrame(columns=columns_list)
 
-    try:
-        i=0
-        prev_case_id=""
-        events_ids=list(iter(df.index))
-        
-        while i < len(events_ids):
-            #if new  case:
-            # TODO: change the hardcoded caseID
-            if prev_case_id != df.at[events_ids[i],"caseId"]:
-                prev_case_id=df.at[events_ids[i],"caseId"]
-                start_event_idx=i
-                
-                #TODO: start_time?
-                # TODO: change the hardcoded 
-                end_time=df.at[events_ids[i],seconds_col]
-                
-            else:
-                # look for new player_col value or new caseID
-                # TODO: change the hardcoded caseID
-                while ((i < df.size) & (prev_case_id==df.at[events_ids[i],"caseId"]) & 
-                       (df.at[events_ids[i],player_col]==df.at[events_ids[start_event_idx],player_col])):
-                    # TODO: change the hardcoded caseID
-                    end_time=df.at[events_ids[i],seconds_col]
-                    i=i+1
-                # TODO: change the hardcoded caseID
-                df.at[events_ids[start_event_idx],"end_time"] = end_time
-                #TODO: copy the row to a new df (or filter at the end of it.)
-                
-                start_event_idx=i
-                end_time=df.at[events_ids[i],seconds_col]
-                
-            i=i+1
-    except:
-        print("Unexpected error:", sys.exc_info()[0])
-        print("while i=" + str(i) + "size of df is "+str(df.size))
-        raise
+    # for each row, check if its the same case_if
+    df_index=df.index
+    j=0
     
-    df = df.dropna()
-    return df
+    for i in range(1,len(df.index)):
+        #if same case id
+        if df.at[df_index[i],case_id_col] != df.at[df_index[j],case_id_col] or df.at[df_index[i],player_col] != df.at[df_index[j],player_col]:
+            #add row to new df
+            new_df=new_df.append([ df.loc[df_index[j]] ])
+
+            # get time from prev row
+            new_df.at[df_index[j], "end_time"] = df.at[df_index[i-1],seconds_col]
+            j=i
+    return new_df
+           
+
 
 
 # add dates

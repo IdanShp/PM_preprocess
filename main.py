@@ -106,9 +106,9 @@ if 'ASSIGN_CASE_ID' in locals() or not os.path.exists(conf.caseid_file):
 
     
     # assaign normal cases.
-    normal_case=step.assign_case_id(df,conf.case_id_col,conf.eventsfile_teamid,conf.match_col,trace_team_id=676,1)
-    normal_case = normal_case.dropna()
-    normal_case.to_csv("./data_set/normal.csv",float_format="%.6f")
+    # normal_case=step.assign_case_id(df, conf.case_id_col, conf.eventsfile_teamid, conf.match_col, trace_team_id=676, max_distance=1)
+    # normal_case = normal_case.dropna()
+    # normal_case.to_csv("./data_set/normal.csv",float_format="%.6f")
 
 
     # set case ID by - team name, tags, event name.
@@ -119,7 +119,7 @@ if 'ASSIGN_CASE_ID' in locals() or not os.path.exists(conf.caseid_file):
     
     if conf.remove_loops:
         print("remove loops")
-        df=step.remove_loops(df, conf.eventsfile_pname ,conf.case_id_col)
+        df=step.remove_loops(df, conf.eventsfile_pid ,conf.case_id_col)
 
     try:
         df.to_json(conf.caseid_file, orient='index',force_ascii=False, index=True)
