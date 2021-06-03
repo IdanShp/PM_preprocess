@@ -2,9 +2,11 @@ import os
 import sys
 import pandas as pd
 import pm4py
+import unidecode
 
 
-# CREATE_NEW_DATASET = True
+
+CREATE_NEW_DATASET = True
 ASSIGN_CASE_ID = True
 CREATE_XES = True
 
@@ -59,6 +61,8 @@ if 'CREATE_NEW_DATASET' in locals() or not os.path.exists(conf.prepare_file):
     # read player id, add player_name column
     print("adding player_name columns")
     pn=pd.read_json(conf.players_file, encoding='unicode_escape')
+    # pn['firstName'] = map(lambda x: x.encode().decode("unicode_escape"), pn['firstName'].str)
+    pn['shortName'] = list(map(lambda x: unidecode.unidecode(x), pn['shortName']))
 
     df= df.join(pn[[conf.playerfile_name, conf.playerfile_id]].rename(
             columns={conf.playerfile_id: conf.eventsfile_pid,
