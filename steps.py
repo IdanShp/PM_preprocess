@@ -8,6 +8,20 @@ import sys
 import os
 import pandas as pd
 import ast
+import time
+
+
+import functools
+
+
+def timer(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        start_time = time.process_time()
+        value = func(*args, **kwargs)
+        print("done", func.__name__, ". working time: ",time.process_time() - start_time)
+        return value
+    return wrapper
 
 
 ##### add zone #####
@@ -57,7 +71,7 @@ def add_zone_col(df, pos_col_name, new_pos_col_name, zones, split_x_to, split_y_
     return (df)
 
 
-
+@timer
 def assign_case_id(events_df, caseid_col, team_id_col,match_id_col, trace_team_id,max_distance):
     
     case_id=0
@@ -65,6 +79,7 @@ def assign_case_id(events_df, caseid_col, team_id_col,match_id_col, trace_team_i
     prev_game=""
     #for each row
     for i, row in events_df.iterrows():
+        #if its not same game like before
         if prev_game!=events_df.at[i, match_id_col]:
             prev_game=events_df.at[i, match_id_col]
             case_id+=1
@@ -126,27 +141,19 @@ def half_to_90min(df,halfs_col="matchPeriod" ,seconds_col="eventSec" ):
     return df
 
 
+@timer
+def remove_loops(df: pd.DataFrame, player_col, case_id_col, seconds_col="eventSec"):
+    j=df.index[0]
 
-def remove_loops(df, player_col, case_id_col, seconds_col="eventSec"):
-    
-    #create new d ataframe with same columns
-    columns_list = list(df.columns.values)
-    new_df=pd.DataFrame(columns=columns_list)
-
-    # for each row, check if its the same case_if
-    df_index=df.index
-    j=0
-    
-    for i in range(1,len(df.index)):
-        #if same case id
-        if df.at[df_index[i],case_id_col] != df.at[df_index[j],case_id_col] or df.at[df_index[i],player_col] != df.at[df_index[j],player_col]:
-            #add row to new df
-            new_df=new_df.append([ df.loc[df_index[j]] ])
-
-            # get time from prev row
-            new_df.at[df_index[j], "end_time"] = df.at[df_index[i-1],seconds_col]
+    for i, row in df.iterrows():
+        if row[case_id_col] != df.at[j,case_id_col] or row[player_col] != df.at[j,player_col]:
+            df.at[j,"end_time"] = prev_row[seconds_col] # no way we enter this line on the first time
             j=i
-    return new_df
+
+        prev_row=row
+    df=df.dropna()
+
+    return df
            
 
 
@@ -159,6 +166,7 @@ def add_date(df,time_col,match_col,date_col,begin_date,time_between):
     begin date - date of the fisrst game
     time_between - time between games
     """
+    
     main_timer=begin_date
     events_ids=list(iter(df.index))
     current_match=df.at[events_ids[0],match_col]

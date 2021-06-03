@@ -3,15 +3,14 @@ import sys
 import pandas as pd
 import pm4py
 import unidecode
+import time
 
 
-
-CREATE_NEW_DATASET = True
+# CREATE_NEW_DATASET = True
 ASSIGN_CASE_ID = True
 CREATE_XES = True
 
 # time for monitoring
-import time
 
 # TODO give an option to create everything again
 
@@ -124,6 +123,7 @@ if 'ASSIGN_CASE_ID' in locals() or not os.path.exists(conf.caseid_file):
     if conf.remove_loops:
         print("remove loops")
         df=step.remove_loops(df, conf.eventsfile_pid ,conf.case_id_col)
+        # normal_case=step.remove_loops(df, conf.eventsfile_pid ,conf.case_id_col)
 
     try:
         df.to_json(conf.caseid_file, orient='index',force_ascii=False, index=True)
@@ -141,7 +141,7 @@ if 'CREATE_XES' in locals() or not os.path.exists(conf.xes_file):
     #remove lists columns (make problems with converting to xes)
     df=df.drop(columns=[conf.tags_col, conf.position_col])
   
-    # drop unused columns for speed?
+    # drop unused columns for speed and readability??
         
     #pm4py - create xes file
     print('building event log')
@@ -165,8 +165,8 @@ print("left with ",len(log)," cases")
 # heuristic:
 map = pm4py.discover_heuristics_net(log,dependency_threshold=0.9,and_threshold=0.65, loop_two_threshold=0.5)
 pm4py.view_heuristics_net(map)
-# inductive:
 
+# inductive:
 from pm4py.objects.log.importer.xes import importer as xes_importer
 from pm4py.algo.discovery.inductive import algorithm as inductive_miner
 from pm4py.visualization.process_tree import visualizer as pt_visualizer
