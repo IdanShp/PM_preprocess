@@ -173,6 +173,7 @@ def add_date(df,time_col,match_col,date_col,begin_date,time_between):
     for i, row in df.iterrows():
         if current_match != df.at[i,match_col]:
             main_timer+=time_between
+            current_match=df.at[i,match_col]
         df.at[i,date_col]=str(main_timer+timedelta(seconds=df.at[i,time_col]))
     return(df)
         
