@@ -142,11 +142,11 @@ def half_to_90min(df,halfs_col="matchPeriod" ,seconds_col="eventSec" ):
 
 
 @timer
-def remove_loops(df: pd.DataFrame, player_col, case_id_col, seconds_col="eventSec"):
+def remove_loops(df: pd.DataFrame, indicator_col, case_id_col, seconds_col="date_time"):
     j=df.index[0]
 
     for i, row in df.iterrows():
-        if row[case_id_col] != df.at[j,case_id_col] or row[player_col] != df.at[j,player_col]:
+        if row[case_id_col] != df.at[j,case_id_col] or row[indicator_col] != df.at[j,indicator_col]:
             df.at[j,"end_time"] = prev_row[seconds_col] # no way we enter this line on the first time
             j=i
 
