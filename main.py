@@ -6,7 +6,7 @@ import unidecode
 import time
 
 
-# CREATE_NEW_DATASET = True
+CREATE_NEW_DATASET = True
 ASSIGN_CASE_ID = True
 CREATE_XES = True
 # PROCESS_MINING = True
@@ -141,8 +141,11 @@ if 'ASSIGN_CASE_ID' in locals() or not os.path.exists(conf.caseid_file):
 
         # normal_case=step.remove_loops(df, conf.eventsfile_pid ,conf.case_id_col)
     print("writing file to csv (good for observing the data with excel")
-    good_case.to_csv("./csv/good_noloops.csv")
-    normal.to_csv("./csv/normal_no_loops.csv")
+    good_case.to_csv("./csv/player_good_no_loops_%d_games.csv" % len(conf.matches_include))
+    normal.to_csv("./csv/player_normal_no_loops_%d_games.csv" % len(conf.matches_include))
+
+    good_case_zone.to_csv("./csv/zone_good_no_loops_%d_games.csv" % len(conf.matches_include))
+    normal_zone.to_csv("./csv/zone_normal_no_loops_%d_games.csv" % len(conf.matches_include))
 
     try:
 
