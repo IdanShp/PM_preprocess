@@ -178,6 +178,16 @@ def add_date(df,time_col,match_col,date_col,begin_date,time_between):
     return(df)
         
 
+def substruct_log_from_log(log1: pd.DataFrame, log2: pd.DataFrame):
+    """
+    remove all the cases of log 2 from log 1
+    """
+    log2_id=set(log2.index)
+    log1_id=set(log1.index)
+    wanted_ids=log1_id-log2_id
+    return log1.loc[wanted_ids].copy()
+
+
 # steps:
 # filter season with wanted matches (by match id in config file)
 # open filtered json as dataframe

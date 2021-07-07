@@ -126,7 +126,7 @@ if 'ASSIGN_CASE_ID' in locals() or not os.path.exists(conf.caseid_file):
                         conf.eventsfile_teamid, conf.tags_col, conf.events_col,
                         conf.zone_col)
 
-    good_case.to_csv("./csv/good.csv")
+    # good_case.to_csv("./csv/good.csv")
 
     normal_zone =normal.copy()
     good_case_zone =good_case.copy()
@@ -146,6 +146,13 @@ if 'ASSIGN_CASE_ID' in locals() or not os.path.exists(conf.caseid_file):
 
     good_case_zone.to_csv("./csv/zone_good_no_loops_%d_games.csv" % len(conf.matches_include))
     normal_zone.to_csv("./csv/zone_normal_no_loops_%d_games.csv" % len(conf.matches_include))
+
+    bad_players=step.substruct_log_from_log(normal,good_case)
+    bad_zones=step.substruct_log_from_log(normal_zone,good_case_zone)
+
+    bad_players.to_csv("./csv/players_bad_no_loops_%d_games.csv" % len(conf.matches_include))
+    bad_zones.to_csv("./csv/zone_bad_no_loops_%d_games.csv" % len(conf.matches_include))
+
 
     try:
 
