@@ -73,7 +73,9 @@ def add_zone_col(df, pos_col_name, new_pos_col_name, zones, split_x_to, split_y_
 
 @timer
 def assign_case_id(events_df, caseid_col, team_id_col,match_id_col, trace_team_id,max_distance):
-    
+    """
+    assign case id to trace_team_id team and remove rows not in them
+    """
     case_id=0
     dist=0
     prev_game=""
@@ -94,7 +96,7 @@ def assign_case_id(events_df, caseid_col, team_id_col,match_id_col, trace_team_i
         else:
             dist+=1
 
-        
+    events_df.dropna()
     return events_df
 
 
@@ -109,7 +111,7 @@ def get_2d_cases(events_df, caseid_col, team_name_col, team_id_col, tags_col, ev
         team_name=row[team_name_col]
         tags = row[tags_col]
         if team_name == 'Barcelona' and ((1801 in tags or 703 in tags) or 'Shot' in row['eventName']):
-            events_df.at[i, caseid_col] = str(case_id)
+            # events_df.at[i, caseid_col] = str(case_id)
             #print("CaseID given "+ str(case_id))
             current_case_used = True
             # if frame not in ['D1', 'D2', 'D3'] and str(case_id) not in low_value_cases:
@@ -126,6 +128,23 @@ def get_2d_cases(events_df, caseid_col, team_name_col, team_id_col, tags_col, ev
             events_df.at[i, caseid_col] = 0
         
     # print(high_value_cases)
+    new_items_df = events_df.loc[events_df[caseid_col].isin(high_value_cases)].copy()
+    return(new_items_df)
+
+
+def get_2d_cases_v2(events_df, caseid_col,event_col,zone_col):
+    """
+    get noraml cased dataframe, keep only the good cases\n
+    good case means it contained:\n
+    \t - shot in it\n
+    \t - D2 in it\n
+    """
+    current_case_used = True
+    high_value_cases = set()
+
+    for i, row in events_df.iterrows():
+        if (row[event_col]=='Shot') or (row[zone_col]=='D2'):
+                high_value_cases.add(row[caseid_col])
     new_items_df = events_df.loc[events_df[caseid_col].isin(high_value_cases)].copy()
     return(new_items_df)
 
@@ -178,14 +197,14 @@ def add_date(df,time_col,match_col,date_col,begin_date,time_between):
     return(df)
         
 
-def substruct_log_from_log(log1: pd.DataFrame, log2: pd.DataFrame):
+def substruct_log_from_log(log1: pd.DataFrame, log2: pd.DataFrame, filter_col: str) -> pd.DataFrame:
     """
     remove all the cases of log 2 from log 1
     """
-    log2_id=set(log2.index)
-    log1_id=set(log1.index)
-    wanted_ids=log1_id-log2_id
-    return log1.loc[wanted_ids].copy()
+    log2_id=set(log2[filter_col])
+    log1_id=set(log1[filter_col])
+    filtered_values=log1_id-log2_id
+    return log1.loc[log1[filter_col].isin(filtered_values)].copy()
 
 
 # steps:

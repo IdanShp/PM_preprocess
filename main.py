@@ -96,91 +96,91 @@ if 'CREATE_NEW_DATASET' in locals() or not os.path.exists(conf.prepare_file):
                         conf.date_col,conf.begin_date,conf.time_between)
 
     try:
-        df.to_json(conf.prepare_file, orient='index',force_ascii=False, index=True)
+        df.to_json(conf.prepare_file, orient='index',**conf.to_json_args)
         print("prepare file ready")
     except:
         print("cant write prepare file")
 
 
-if 'ASSIGN_CASE_ID' in locals() or not os.path.exists(conf.caseid_file):
+if 'ASSIGN_CASE_ID' in locals() or not os.path.exists(conf.prepare_file):
     # open file
     print("reloading last data_set")
-    df=pd.read_json(conf.prepare_file,encoding="unicode_escape", orient='index', convert_dates=False, convert_axes=False)
+    df=pd.read_json(conf.prepare_file,encoding="unicode_escape", orient='index', **conf.read_json_args)
     # consider - event second, madftch half and last game finish time. calculate event absolute time and relative time
 
-    normal=df.copy()
-    good_case=df.copy()
-
-
-    # assaign normal cases.
-    normal=step.assign_case_id(normal, conf.case_id_col, conf.eventsfile_teamid, conf.match_col, trace_team_id=676, max_distance=1)
-    normal = normal.dropna()
-
-
-    normal.to_csv("./csv/normal.csv")
-
-
-    # set case ID by - team name, tags, event name.
-    print("assigning case id for good moves")
-    good_case=step.get_2d_cases(good_case, conf.case_id_col , conf.eventsfile_team_name,
-                        conf.eventsfile_teamid, conf.tags_col, conf.events_col,
-                        conf.zone_col)
-
-    # good_case.to_csv("./csv/good.csv")
-
-    normal_zone =normal.copy()
-    good_case_zone =good_case.copy()
+    # assaign case id. (676 team id is barcelona)
+    normal=step.assign_case_id(df, conf.case_id_col, conf.eventsfile_teamid, conf.match_col, trace_team_id=676, max_distance=1)
     
+    print("save all case id, loops not removed yet")
+    normal.to_csv("./csv/normal_with_loops.csv")
+
+    #make dataframe for zones
+    normal_zone =normal.copy()
+
     if conf.remove_loops:
-        print("remove loops")
+        print("remove players loops")
         normal=step.remove_loops(normal, conf.eventsfile_pid ,conf.case_id_col)
-        good_case=step.remove_loops(good_case, conf.eventsfile_pid ,conf.case_id_col)
-
+        print("remove zone loops")
         normal_zone=step.remove_loops(normal_zone, conf.zone_col ,conf.case_id_col)
-        good_case_zone=step.remove_loops(good_case_zone, conf.zone_col ,conf.case_id_col)
 
-        # normal_case=step.remove_loops(df, conf.eventsfile_pid ,conf.case_id_col)
-    print("writing file to csv (good for observing the data with excel")
-    good_case.to_csv("./csv/player_good_no_loops_%d_games.csv" % len(conf.matches_include))
-    normal.to_csv("./csv/player_normal_no_loops_%d_games.csv" % len(conf.matches_include))
+    # filter good and bad cases
+    print("filter good cases and bad cases")
+    good_case=step.get_2d_cases_v2(normal, conf.case_id_col,conf.events_col,conf.zone_col)
+    good_case_zone=step.get_2d_cases_v2(normal, conf.case_id_col,conf.events_col,conf.zone_col)
 
-    good_case_zone.to_csv("./csv/zone_good_no_loops_%d_games.csv" % len(conf.matches_include))
-    normal_zone.to_csv("./csv/zone_normal_no_loops_%d_games.csv" % len(conf.matches_include))
-
-    bad_players=step.substruct_log_from_log(normal,good_case)
-    bad_zones=step.substruct_log_from_log(normal_zone,good_case_zone)
-
-    bad_players.to_csv("./csv/players_bad_no_loops_%d_games.csv" % len(conf.matches_include))
-    bad_zones.to_csv("./csv/zone_bad_no_loops_%d_games.csv" % len(conf.matches_include))
+    bad_players=step.substruct_log_from_log(normal,good_case,conf.case_id_col)
+    bad_zones=step.substruct_log_from_log(normal_zone,good_case_zone,conf.case_id_col)
 
 
+    #write csv files for observation 
+    while True:
+        try:
+            print("writing file to csv (good for observing the data with excel")
+            good_case.to_csv(conf.csv_names["players"], **conf.to_csv_args)
+            normal.to_csv(conf.csv_names["players_good"], **conf.to_csv_args)
+            bad_players.to_csv(conf.csv_names["players_bad"], **conf.to_csv_args)
+            good_case_zone.to_csv(conf.csv_names["zone"], **conf.to_csv_args)
+            normal_zone.to_csv(conf.csv_names["zone_good"], **conf.to_csv_args)
+            bad_zones.to_csv(conf.csv_names["zone_bad"], **conf.to_csv_args)
+            break
+
+        except PermissionError:
+            print("one of the files is open. close it and pres enter")
+            input()
+
+
+    #save json for next stage
     try:
+        normal.to_json(conf.json_names["caseid_file"], orient='index',**conf.to_json_args)
+        good_case.to_json(conf.json_names["good_caseid_file"], orient='index',**conf.to_json_args)
+        bad_players.to_json(conf.json_names["bad_caseid_file"], orient='index',**conf.to_json_args)
 
-        normal.to_json(conf.json_names["caseid_file"], orient='index',force_ascii=False, index=True)
-        good_case.to_json(conf.json_names["good_caseid_file"], orient='index',force_ascii=False, index=True)
-
-        normal_zone.to_json(conf.json_names["zone_caseid_file"], orient='index',force_ascii=False, index=True)
-        good_case_zone.to_json(conf.json_names["zone_good_caseid_file"], orient='index',force_ascii=False, index=True)
+        normal_zone.to_json(conf.json_names["zone_caseid_file"], orient='index',**conf.to_json_args)
+        good_case_zone.to_json(conf.json_names["zone_good_caseid_file"], orient='index',**conf.to_json_args)
+        bad_zones.to_json(conf.json_names["zone_bad_caseid_file"], orient='index',**conf.to_json_args)
         print("caseid_file file ready")
     except:
         print("cant write caseid_file ")
 
 if 'CREATE_XES' in locals() or not os.path.exists(conf.xes_file):
 
-
     print("reloading last case_id")
-    normal=pd.read_json(conf.json_names["caseid_file"], orient='index', convert_dates=False, convert_axes=False)
-    good=pd.read_json(conf.json_names["good_caseid_file"], orient='index', convert_dates=False, convert_axes=False)
+    normal=pd.read_json(conf.json_names["caseid_file"], orient='index', **conf.read_json_args)
+    good=pd.read_json(conf.json_names["good_caseid_file"], orient='index', **conf.read_json_args)
+    bad=pd.read_json(conf.json_names["bad_caseid_file"], orient='index', **conf.read_json_args)
 
-    zone_normal=pd.read_json(conf.json_names["zone_caseid_file"], orient='index', convert_dates=False, convert_axes=False)
-    zone_good=pd.read_json(conf.json_names["zone_good_caseid_file"], orient='index', convert_dates=False, convert_axes=False)
+    zone_normal=pd.read_json(conf.json_names["zone_caseid_file"], orient='index', **conf.read_json_args)
+    zone_good=pd.read_json(conf.json_names["zone_good_caseid_file"], orient='index', **conf.read_json_args)
+    zone_bad=pd.read_json(conf.json_names["zone_bad_caseid_file"], orient='index', **conf.read_json_args)
 
     #remove lists columns (make problems with converting to xes)
     normal=normal.drop(columns=[conf.tags_col, conf.position_col])
     good=good.drop(columns=[conf.tags_col, conf.position_col])
+    bad=bad.drop(columns=[conf.tags_col, conf.position_col])
 
     zone_normal=zone_normal.drop(columns=[conf.tags_col, conf.position_col])
     zone_good=zone_good.drop(columns=[conf.tags_col, conf.position_col])
+    zone_bad=zone_bad.drop(columns=[conf.tags_col, conf.position_col])
 
     # drop unused columns for speed and readability??
 
@@ -189,17 +189,21 @@ if 'CREATE_XES' in locals() or not os.path.exists(conf.xes_file):
     # by player:
     normal_event_log = pm4py.format_dataframe(normal, case_id=conf.case_id_col, activity_key=conf.eventsfile_pname, timestamp_key=conf.date_col, timest_format='yyyy-mm-dd hh:mm:ss.SSSSSS')
     good_event_log = pm4py.format_dataframe(good, case_id=conf.case_id_col, activity_key=conf.eventsfile_pname, timestamp_key=conf.date_col, timest_format='yyyy-mm-dd hh:mm:ss.SSSSSS')
+    bad_event_log = pm4py.format_dataframe(bad, case_id=conf.case_id_col, activity_key=conf.eventsfile_pname, timestamp_key=conf.date_col, timest_format='yyyy-mm-dd hh:mm:ss.SSSSSS')
 
     #by zone
     normal_event_log_zone = pm4py.format_dataframe(zone_normal, case_id=conf.case_id_col, activity_key=conf.zone_col, timestamp_key=conf.date_col, timest_format='yyyy-mm-dd hh:mm:ss.SSSSSS')
     good_event_log_zone = pm4py.format_dataframe(zone_good, case_id=conf.case_id_col, activity_key=conf.zone_col, timestamp_key=conf.date_col, timest_format='yyyy-mm-dd hh:mm:ss.SSSSSS')
+    bad_event_log_zone = pm4py.format_dataframe(zone_bad, case_id=conf.case_id_col, activity_key=conf.zone_col, timestamp_key=conf.date_col, timest_format='yyyy-mm-dd hh:mm:ss.SSSSSS')
     
     from pm4py.objects.log.exporter.xes import exporter as xes_exporter
     xes_exporter.apply(normal_event_log, conf.xes_names["player_xes_file"])
     xes_exporter.apply(good_event_log, conf.xes_names["player_good_xes_file"])
+    xes_exporter.apply(bad_event_log, conf.xes_names["player_bad_xes_file"])
 
     xes_exporter.apply(normal_event_log_zone, conf.xes_names["zone_xes_file"])
     xes_exporter.apply(good_event_log_zone, conf.xes_names["zone_good_xes_file"])
+    xes_exporter.apply(bad_event_log_zone, conf.xes_names["zone_bad_xes_file"])
     # pm4py.write_xes(event_log, conf.xes_file)
 
 if 'PROCESS_MINING' in locals():
