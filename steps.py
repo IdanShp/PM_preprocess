@@ -96,7 +96,7 @@ def assign_case_id(events_df, caseid_col, team_id_col,match_id_col, trace_team_i
         else:
             dist+=1
 
-    events_df.dropna()
+    events_df=events_df.dropna()
     return events_df
 
 

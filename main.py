@@ -125,8 +125,8 @@ if 'ASSIGN_CASE_ID' in locals() or not os.path.exists(conf.prepare_file):
 
     # filter good and bad cases
     print("filter good cases and bad cases")
-    good_case=step.get_2d_cases_v2(normal, conf.case_id_col,conf.events_col,conf.zone_col)
-    good_case_zone=step.get_2d_cases_v2(normal, conf.case_id_col,conf.events_col,conf.zone_col)
+    good_case = step.get_2d_cases_v2(normal, conf.case_id_col,conf.events_col,conf.zone_col)
+    good_case_zone = step.get_2d_cases_v2(normal_zone, conf.case_id_col,conf.events_col,conf.zone_col)
 
     bad_players=step.substruct_log_from_log(normal,good_case,conf.case_id_col)
     bad_zones=step.substruct_log_from_log(normal_zone,good_case_zone,conf.case_id_col)
