@@ -6,9 +6,9 @@ import unidecode
 import time
 
 
-# CREATE_NEW_DATASET = True
-# ASSIGN_CASE_ID = True
-# CREATE_XES = True
+CREATE_NEW_DATASET = True
+ASSIGN_CASE_ID = True
+CREATE_XES = True
 # PROCESS_MINING = True
 
 # time for monitoring
@@ -160,7 +160,7 @@ if 'ASSIGN_CASE_ID' in locals() or not os.path.exists(conf.prepare_file):
     except:
         print("cant write caseid_file ")
 
-if 'CREATE_XES' in locals() or not os.path.exists(conf.xes_file):
+if 'CREATE_XES' in locals():
 
     print("reloading last case_id")
     normal=pd.read_json(conf.json_names["caseid_file"], orient='index', **conf.read_json_args)
