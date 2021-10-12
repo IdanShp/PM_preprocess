@@ -6,27 +6,26 @@ import unidecode
 import time
 
 
-CREATE_NEW_DATASET = True
-ASSIGN_CASE_ID = True
-CREATE_XES = True
+# CREATE_NEW_DATASET = True
+# ASSIGN_CASE_ID = True
+# CREATE_XES = True
 # PROCESS_MINING = True
 
 # time for monitoring
 
-# TODO give an option to create everything again
 
-# 0.load configuration
+# 1.load configuration
 import configurations as conf
-# source steps file. (import steps as ...)
 import steps as step
 
+
+# monitor runing time
 start_time = time.process_time()
 
 if 'CREATE_NEW_DATASET' in locals() or not os.path.exists(conf.prepare_file):
     print("creating new data_set")
 
     # 1.prepare files
-    # unzip (if necessary)
     already_unzipped = 1
     for f in [conf.events_file, conf.players_file, conf.teams_file, conf.matches_file]:
         if not os.path.exists(f):
@@ -49,7 +48,7 @@ if 'CREATE_NEW_DATASET' in locals() or not os.path.exists(conf.prepare_file):
     print("filtering wanted games")
     df = df.loc[df[conf.match_col].isin(conf.matches_include)]
 
-    # read team id, add team name column
+    # add team_name column by team id
     print("adding team_name columns")
     tn=pd.read_json(conf.teams_file)
     df=df.join(tn[[conf.teamfile_name,conf.teamfile_id]].rename(
@@ -58,10 +57,9 @@ if 'CREATE_NEW_DATASET' in locals() or not os.path.exists(conf.prepare_file):
                     inplace=False).set_index(conf.eventsfile_teamid),
                     on=conf.eventsfile_teamid)
 
-    # read player id, add player_name column
+    # add player_name column by player id
     print("adding player_name columns")
     pn=pd.read_json(conf.players_file, encoding='unicode_escape')
-    # pn['firstName'] = map(lambda x: x.encode().decode("unicode_escape"), pn['firstName'].str)
     pn['shortName'] = list(map(lambda x: unidecode.unidecode(x), pn['shortName']))
 
     df= df.join(pn[[conf.playerfile_name, conf.playerfile_id]].rename(
@@ -76,21 +74,21 @@ if 'CREATE_NEW_DATASET' in locals() or not os.path.exists(conf.prepare_file):
     else:
         df[[conf.eventsfile_pname]] = df[[conf.eventsfile_pname]].fillna(conf.unknown_pname)
 
-    # read position (coordinates) and convert to frame
+    # read position (coordinates) and convert to zone
     print("adding zone columns")
     df = step.add_zone_col(df, conf.position_col, conf.zone_col, conf.zones, conf.split_x_to, conf.split_y_to)
 
-    # convert tags from dict to list
+    # convert tags from dict type to a list
     print("adjusting tags")
     df[conf.tags_col]=df[conf.tags_col].apply(
             lambda x: [d[conf.id_col] for d in x] )
 
-    #fix time
+    # fix time
     print("adjusting time")
     df=step.half_to_90min(df,halfs_col=conf.match_peroid_col, 
                           seconds_col=conf.event_sec)
 
-    # add dates 
+    # add dates (prevet game from overlapping in time)
     print("adding date column")
     df= step.add_date(df,conf.time_col,conf.match_col, 
                         conf.date_col,conf.begin_date,conf.time_between)
@@ -106,9 +104,9 @@ if 'ASSIGN_CASE_ID' in locals() or not os.path.exists(conf.prepare_file):
     # open file
     print("reloading last data_set")
     df=pd.read_json(conf.prepare_file,encoding="unicode_escape", orient='index', **conf.read_json_args)
-    # consider - event second, madftch half and last game finish time. calculate event absolute time and relative time
 
     # assaign case id. (676 team id is barcelona)
+    # TODO: remove magic number
     normal=step.assign_case_id(df, conf.case_id_col, conf.eventsfile_teamid, conf.match_col, trace_team_id=676, max_distance=1)
     
     print("save all case id, loops not removed yet")
@@ -173,7 +171,7 @@ if 'CREATE_XES' in locals() or not os.path.exists(conf.xes_file):
     zone_good=pd.read_json(conf.json_names["zone_good_caseid_file"], orient='index', **conf.read_json_args)
     zone_bad=pd.read_json(conf.json_names["zone_bad_caseid_file"], orient='index', **conf.read_json_args)
 
-    #remove lists columns (make problems with converting to xes)
+    #remove lists columns (make problems when converting to xes)
     normal=normal.drop(columns=[conf.tags_col, conf.position_col])
     good=good.drop(columns=[conf.tags_col, conf.position_col])
     bad=bad.drop(columns=[conf.tags_col, conf.position_col])
@@ -204,57 +202,6 @@ if 'CREATE_XES' in locals() or not os.path.exists(conf.xes_file):
     xes_exporter.apply(normal_event_log_zone, conf.xes_names["zone_xes_file"])
     xes_exporter.apply(good_event_log_zone, conf.xes_names["zone_good_xes_file"])
     xes_exporter.apply(bad_event_log_zone, conf.xes_names["zone_bad_xes_file"])
-    # pm4py.write_xes(event_log, conf.xes_file)
-
-if 'PROCESS_MINING' in locals():
-    # read log (default is the normal!)
-    log = pm4py.read_xes(conf.xes_file)
-
-    # filter short moves (optional)
-    print("filtering short cases (less than 4?)")
-    from pm4py.algo.filtering.log.cases import case_filter
-    log = case_filter.filter_on_case_size(log,min_case_size = 4)
-    print("left with ",len(log)," cases")
-    # add trace start and end states (optional)
-
-    ### start with PM algorithms ###
-    # heuristic:
-    map = pm4py.discover_heuristics_net(log,dependency_threshold=0.1,and_threshold=0.65, loop_two_threshold=0.5)
-    pm4py.view_heuristics_net(map)
-
-    # # inductive:
-    # from pm4py.objects.log.importer.xes import importer as xes_importer
-    # from pm4py.algo.discovery.inductive import algorithm as inductive_miner
-    # from pm4py.visualization.process_tree import visualizer as pt_visualizer
-    # from pm4py.visualization.heuristics_net import visualizer as hn_visualizer
-    # from pm4py.visualization.dfg import visualizer as dfg_visualizer
-
-    # from pm4py.visualization.petrinet import visualizer as pn_visualizer
-
-
-    # net, initial_marking, final_marking = inductive_miner.apply(log)
-    # tree = inductive_miner.apply_tree(log)
-    # tree = inductive_miner.apply_dfg(net)
-    # gviz_freq = dfg_visualizer.apply(frequency_dfg, variant=dfg_visualizer.Variants.FREQUENCY, activities_count=activities_freq, parameters={"format": "svg"})
-    # dfg_visualizer.view(gviz_freq)
-
-    # gviz = pt_visualizer.apply(tree)
-    # pt_visualizer.view(gviz)
-
-    # net to transition system
-    # from pm4py.objects.petri_net.utils import reachability_graph
-
-    # ts = reachability_graph.construct_reachability_graph(net, initial_marking)
-
-    # from pm4py.visualization.transition_system import visualizer as ts_visualizer
-
-    # gviz = ts_visualizer.apply(ts, parameters={ts_visualizer.Variants.VIEW_BASED.value.Parameters.FORMAT: "svg"})
-    # ts_visualizer.view(gviz)
-
-
-
-    # gviz = pn_visualizer.apply(net, initial_marking, final_marking)
-    # pn_visualizer.view(gviz)
 
 
 print("done. working time: ",time.process_time() - start_time)
